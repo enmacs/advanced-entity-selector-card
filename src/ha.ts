@@ -44,9 +44,18 @@ export interface FloorRegistryEntry {
   labels: string[];
 }
 
+export interface LabelRegistryEntry {
+  label_id: string;
+  name: string;
+  icon?: string | null;
+  color?: string | null;
+  description?: string | null;
+}
+
 export interface HomeAssistant extends BaseHomeAssistant {
   entities: Record<string, EntityRegistryEntry>;
   devices: Record<string, DeviceRegistryEntry>;
   areas: Record<string, AreaRegistryEntry>;
   floors: Record<string, FloorRegistryEntry>;
+  labels?: Record<string, LabelRegistryEntry>;
 }

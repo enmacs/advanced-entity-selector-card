@@ -57,6 +57,14 @@ const EN = {
   'card.copy.success.one': 'Copied {n} entity as {format}',
   'card.copy.success.other': 'Copied {n} entities as {format}',
 
+  // Quick-tag (multi-select bulk label apply)
+  'card.tag.placeholder': 'Add label…',
+  'card.tag.no_labels': 'No labels defined in Home Assistant',
+  'card.tag.success.one': 'Added “{label}” to 1 entity',
+  'card.tag.success.other': 'Added “{label}” to {n} entities',
+  'card.tag.skipped': 'All selected entities already had “{label}”',
+  'card.tag.failed': 'Failed to add label',
+
   // Section labels (rendered uppercase)
   'section.floors': 'FLOORS',
   'section.areas': 'AREAS',
@@ -144,6 +152,13 @@ const DE: Partial<Record<I18nKey, string>> = {
   'card.copy.failed': 'Kopieren fehlgeschlagen',
   'card.copy.success.one': '{n} Entität als {format} kopiert',
   'card.copy.success.other': '{n} Entitäten als {format} kopiert',
+
+  'card.tag.placeholder': 'Label hinzufügen…',
+  'card.tag.no_labels': 'In Home Assistant sind keine Labels definiert',
+  'card.tag.success.one': '„{label}" zu 1 Entität hinzugefügt',
+  'card.tag.success.other': '„{label}" zu {n} Entitäten hinzugefügt',
+  'card.tag.skipped': 'Alle ausgewählten Entitäten hatten bereits „{label}"',
+  'card.tag.failed': 'Label konnte nicht hinzugefügt werden',
 
   'section.floors': 'ETAGEN',
   'section.areas': 'BEREICHE',

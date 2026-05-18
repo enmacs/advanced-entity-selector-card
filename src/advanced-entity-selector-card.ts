@@ -508,6 +508,7 @@ export class AdvancedEntitySelectorCard extends LitElement implements LovelaceCa
     return html`
       <div class="bottom-bar">
         <span class="count-summary">${t(this.hass, 'card.bottom.selected', { n })}</span>
+        ${this._renderTagPicker(n === 0)}
         <label class="format-pick">
           ${t(this.hass, 'card.bottom.format')}
           <select .value=${this._format} @change=${this._onFormatChange}>
@@ -581,6 +582,76 @@ export class AdvancedEntitySelectorCard extends LitElement implements LovelaceCa
   private _onFormatChange = (e: Event): void => {
     this._format = (e.target as HTMLSelectElement).value as CopyFormat;
   };
+
+  private _renderTagPicker(disabled: boolean): TemplateResult | typeof nothing {
+    const labels = Object.values(this.hass.labels ?? {}).sort((a, b) =>
+      a.name.localeCompare(b.name),
+    );
+    if (labels.length === 0) return nothing;
+    return html`
+      <label class="format-pick">
+        <select
+          class="tag-pick"
+          ?disabled=${disabled}
+          @change=${this._onTagPickChange}
+        >
+          <option value="" selected>${t(this.hass, 'card.tag.placeholder')}</option>
+          ${labels.map(
+            (l) => html`<option value=${l.label_id}>${l.name}</option>`,
+          )}
+        </select>
+      </label>
+    `;
+  }
+
+  private _onTagPickChange = (e: Event): void => {
+    const sel = e.target as HTMLSelectElement;
+    const labelId = sel.value;
+    sel.value = '';
+    if (!labelId) return;
+    void this._tagSelectionWithLabel(labelId);
+  };
+
+  private async _tagSelectionWithLabel(labelId: string): Promise<void> {
+    const ids = [...this._selected];
+    if (ids.length === 0) return;
+    const labelName = this.hass.labels?.[labelId]?.name ?? labelId;
+    let updated = 0;
+    let failed = 0;
+    await Promise.all(
+      ids.map(async (entityId) => {
+        const reg = this.hass.entities?.[entityId];
+        if (!reg) {
+          failed++;
+          return;
+        }
+        const existing = reg.labels ?? [];
+        if (existing.includes(labelId)) return;
+        const nextLabels = [...existing, labelId];
+        try {
+          await this.hass.callWS({
+            type: 'config/entity_registry/update',
+            entity_id: entityId,
+            labels: nextLabels,
+          });
+          updated++;
+        } catch {
+          failed++;
+        }
+      }),
+    );
+    if (failed > 0 && updated === 0) {
+      this._showToast(t(this.hass, 'card.tag.failed'));
+      return;
+    }
+    if (updated === 0) {
+      this._showToast(t(this.hass, 'card.tag.skipped', { label: labelName }));
+      return;
+    }
+    this._showToast(
+      tn(this.hass, 'card.tag.success', updated, { label: labelName }),
+    );
+  }
 
   private async _bulkCopy(): Promise<void> {
     const ids = [...this._selected].sort();
