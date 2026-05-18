@@ -2,7 +2,8 @@ import { LitElement, html, css, nothing, type PropertyValues, type TemplateResul
 import { customElement, property, state } from 'lit/decorators.js';
 import { fireEvent, type LovelaceCard } from 'custom-card-helpers';
 
-import { CARD_NAME, CARD_TAG, VERSION } from './const';
+import { CARD_NAME, CARD_TAG, EDITOR_TAG, VERSION } from './const';
+import './editor';
 import type { HierarchyId, AdvancedEntitySelectorCardConfig } from './types';
 import type { HassEntityState, HomeAssistant } from './ha';
 import { computeWorkingSet } from './working-set';
@@ -47,6 +48,19 @@ interface LovelaceLayoutOptions {
 
 @customElement(CARD_TAG)
 export class AdvancedEntitySelectorCard extends LitElement implements LovelaceCard {
+  public static async getConfigElement(): Promise<HTMLElement> {
+    return document.createElement(EDITOR_TAG);
+  }
+
+  public static getStubConfig(): Partial<AdvancedEntitySelectorCardConfig> {
+    return {
+      labels: ['advanced-entity-selector'],
+      default_hierarchy: 'floor_area_device',
+      show_state: true,
+      recents_limit: 10,
+    };
+  }
+
   @property({ attribute: false }) public hass!: HomeAssistant;
   @state() private _config!: AdvancedEntitySelectorCardConfig;
   @state() private _copiedId: string | null = null;
@@ -1070,6 +1084,8 @@ export class AdvancedEntitySelectorCard extends LitElement implements LovelaceCa
   type: CARD_TAG,
   name: CARD_NAME,
   description: 'Browse and pick entities by label, with switchable hierarchies and bulk copy.',
+  preview: true,
+  documentationURL: 'https://github.com/x-ian/advanced-entity-selector-card',
 });
 
 console.info(

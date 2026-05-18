@@ -8,7 +8,7 @@ const dev = process.env.ROLLUP_WATCH === 'true';
 export default {
   input: 'src/advanced-entity-selector-card.ts',
   output: {
-    file: 'dist/advanced-entity-selector.js',
+    file: 'dist/advanced-entity-selector-card.js',
     format: 'es',
     sourcemap: dev,
   },
