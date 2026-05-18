@@ -5,7 +5,7 @@ import { fireEvent, type LovelaceCard } from 'custom-card-helpers';
 import { CARD_NAME, CARD_TAG, EDITOR_TAG, VERSION } from './const';
 import './editor';
 import type { HierarchyId, AdvancedEntitySelectorCardConfig } from './types';
-import type { HassEntityState, HomeAssistant } from './ha';
+import type { HassEntityState, HomeAssistant, LabelRegistryEntry } from './ha';
 import { computeWorkingSet } from './working-set';
 import { copyText } from './clipboard';
 import {
@@ -70,6 +70,8 @@ export class AdvancedEntitySelectorCard extends LitElement implements LovelaceCa
   @state() private _recents: string[] = [];
   @state() private _recentsCollapsed = true;
   @state() private _toast: string | null = null;
+  @state() private _labelRegistry: LabelRegistryEntry[] | null = null;
+  private _labelSub?: () => void;
 
   public setConfig(config: AdvancedEntitySelectorCardConfig): void {
     if (!config.labels || config.labels.length === 0) {
@@ -116,13 +118,58 @@ export class AdvancedEntitySelectorCard extends LitElement implements LovelaceCa
     return this.getLayoutOptions();
   }
 
-  protected willUpdate(_changed: PropertyValues): void {
+  protected willUpdate(changed: PropertyValues): void {
+    if (changed.has('hass') && this.hass && this._labelRegistry === null) {
+      void this._fetchLabels();
+    }
     if (!this._config || !this.hass || this._path.length === 0) return;
     const tree = this._buildTree();
     const { validPath } = navigate(tree, this._path);
     if (validPath.length !== this._path.length) {
       this._path = validPath;
     }
+  }
+
+  public disconnectedCallback(): void {
+    super.disconnectedCallback();
+    this._labelSub?.();
+    this._labelSub = undefined;
+  }
+
+  private async _fetchLabels(): Promise<void> {
+    if (!this.hass) return;
+    try {
+      const list = await this.hass.callWS<LabelRegistryEntry[]>({
+        type: 'config/label_registry/list',
+      });
+      this._labelRegistry = list ?? [];
+    } catch {
+      this._labelRegistry = [];
+    }
+    if (!this._labelSub && this.hass.connection) {
+      const conn = this.hass.connection as {
+        subscribeEvents?: (
+          cb: () => void,
+          eventType: string,
+        ) => Promise<() => void>;
+      };
+      try {
+        const unsub = await conn.subscribeEvents?.(
+          () => void this._fetchLabels(),
+          'label_registry_updated',
+        );
+        if (unsub) this._labelSub = unsub;
+      } catch {
+        // ignore
+      }
+    }
+  }
+
+  private _labels(): LabelRegistryEntry[] {
+    if (this._labelRegistry && this._labelRegistry.length > 0) {
+      return this._labelRegistry;
+    }
+    return Object.values(this.hass?.labels ?? {});
   }
 
   protected render(): TemplateResult {
@@ -584,7 +631,7 @@ export class AdvancedEntitySelectorCard extends LitElement implements LovelaceCa
   };
 
   private _renderTagPicker(disabled: boolean): TemplateResult | typeof nothing {
-    const labels = Object.values(this.hass.labels ?? {}).sort((a, b) =>
+    const labels = [...this._labels()].sort((a, b) =>
       a.name.localeCompare(b.name),
     );
     if (labels.length === 0) return nothing;
@@ -615,7 +662,8 @@ export class AdvancedEntitySelectorCard extends LitElement implements LovelaceCa
   private async _tagSelectionWithLabel(labelId: string): Promise<void> {
     const ids = [...this._selected];
     if (ids.length === 0) return;
-    const labelName = this.hass.labels?.[labelId]?.name ?? labelId;
+    const labelName =
+      this._labels().find((l) => l.label_id === labelId)?.name ?? labelId;
     let updated = 0;
     let failed = 0;
     await Promise.all(
