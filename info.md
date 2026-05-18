@@ -1,15 +1,27 @@
 # Advanced Entity Selector Card
 
-Browse entities tagged with one or more labels through switchable hierarchies — Floor·Area·Device, Domain·Class, Label, or Integration·Device. Drill down with a breadcrumb, search across the full working set, copy single entity IDs, or multi-select and bulk-copy as CSV, YAML list, or JSON array.
+A fast, focused entity browser for Home Assistant dashboards. Pick the right entity — or a whole batch of them — without scrolling endlessly through the Developer Tools.
 
-## Features
+![Advanced Entity Selector Card](docs/screenshot.png)
 
-- Switchable hierarchies over the same label-scoped entity set
-- Drill-down with breadcrumb navigation
-- Search across the working set (name, entity_id, area, floor, device, labels)
-- Multi-select with bulk copy (CSV / YAML list / JSON array)
-- Per-entity copy-to-clipboard
-- Recents shortcut, persisted per label set
+## What it does
+
+Tag the entities you care about with one or more Home Assistant **labels**, then drop this card on a dashboard. The card shows only those entities, grouped the way you want, with everything you typically do next (copy IDs into YAML, search, tag in bulk) one click away.
+
+- **Browse by structure, not by ID list.** Switch between *Floor · Area · Device*, *Domain · Class*, *Label*, or *Integration · Device* views over the same set of entities — no separate cards required.
+- **Drill down with a breadcrumb.** Click a floor, then an area, then a device. Always know where you are.
+- **Search across the working set** — by name, entity_id, area, floor, device, or label.
+- **Copy entity IDs fast.** Single-tap copy per entity, or multi-select and bulk-copy as CSV, YAML list, or JSON array (great for dashboard YAML).
+- **Quick-tag a multi-selection** with an existing Home Assistant label — much faster than tagging entities one by one in Settings.
+- **Recents shortcut** remembers the entities you actually pick, scoped to each label set.
+- **Visual config editor** — no YAML required for the common case.
+- **Available in English and German**, auto-selected from your HA locale.
+
+## When to use it
+
+- You build dashboards and constantly need entity IDs for `entities:` / `entity:` blocks.
+- You curate a working set ("important", "kitchen-relevant", "guest-mode") and want a fast way to inspect or bulk-tag them.
+- You want a tidier alternative to the Developer Tools entity list for day-to-day use.
 
 ## Minimal config
 
@@ -22,7 +34,7 @@ labels: [my-label]
 
 ```yaml
 type: custom:advanced-entity-selector
-title: Advanced Entity Selector
+title: My Entities
 labels: [my-label]
 hierarchies:
   - floor_area_device
@@ -30,11 +42,17 @@ hierarchies:
   - label
   - integration_device
 default_hierarchy: floor_area_device
-show_diagnostic: false
 show_state: true
+show_diagnostic: false
 recents_limit: 10
 ```
 
-## Status
-
-Early development.
+| Option | Type | Default | Description |
+| --- | --- | --- | --- |
+| `labels` | `string[]` | — (required) | HA labels to filter entities by. Only entities tagged with at least one of these are shown. |
+| `title` | `string` | card name | Header shown at the top of the card. |
+| `hierarchies` | `string[]` | all four | Which grouping views the user can switch between. |
+| `default_hierarchy` | `string` | `floor_area_device` | Hierarchy selected on first load. |
+| `show_state` | `boolean` | `true` | Show each entity's current state next to its name. |
+| `show_diagnostic` | `boolean` | `false` | Default state of the "Show diagnostic" toggle. |
+| `recents_limit` | `number` | `10` | How many recently-picked entities to remember per label set (`0` disables). |
