@@ -1,5 +1,6 @@
 import type { DeviceRegistryEntry, HomeAssistant } from './ha';
 import type { HierarchyId } from './types';
+import { t, tn, type I18nKey } from './i18n';
 
 export type NodeKind =
   | 'root'
@@ -431,65 +432,86 @@ export function navigate(
   return { node: current, validPath: valid };
 }
 
-export function childKindLabel(node: TreeNode): string {
+type CountBase =
+  | 'count.floor'
+  | 'count.area'
+  | 'count.device'
+  | 'count.domain'
+  | 'count.class'
+  | 'count.label'
+  | 'count.integration'
+  | 'count.entity';
+
+function countBaseForKind(kind: NodeKind): CountBase | null {
+  switch (kind) {
+    case 'floor':
+      return 'count.floor';
+    case 'area':
+    case 'missing-area':
+      return 'count.area';
+    case 'device':
+    case 'missing-device':
+      return 'count.device';
+    case 'domain':
+      return 'count.domain';
+    case 'device-class':
+    case 'missing-class':
+      return 'count.class';
+    case 'label':
+    case 'missing-label':
+      return 'count.label';
+    case 'integration':
+      return 'count.integration';
+    case 'entity':
+      return 'count.entity';
+    default:
+      return null;
+  }
+}
+
+function sectionKeyForKind(kind: NodeKind): I18nKey | null {
+  switch (kind) {
+    case 'floor':
+      return 'section.floors';
+    case 'area':
+    case 'missing-area':
+      return 'section.areas';
+    case 'device':
+    case 'missing-device':
+      return 'section.devices';
+    case 'domain':
+      return 'section.domains';
+    case 'device-class':
+    case 'missing-class':
+      return 'section.device_classes';
+    case 'label':
+    case 'missing-label':
+      return 'section.labels';
+    case 'integration':
+      return 'section.integrations';
+    case 'entity':
+      return 'section.entities';
+    default:
+      return null;
+  }
+}
+
+export function childKindLabel(node: TreeNode, hass?: HomeAssistant): string {
   if (node.children.length === 0) return '';
   const sample =
     node.children.find((c) => !c.kind.startsWith('missing-')) ??
     node.children[0];
   const n = node.children.length;
-  switch (sample.kind) {
-    case 'floor':
-      return n === 1 ? '1 floor' : `${n} floors`;
-    case 'area':
-    case 'missing-area':
-      return n === 1 ? '1 area' : `${n} areas`;
-    case 'device':
-    case 'missing-device':
-      return n === 1 ? '1 device' : `${n} devices`;
-    case 'domain':
-      return n === 1 ? '1 domain' : `${n} domains`;
-    case 'device-class':
-    case 'missing-class':
-      return n === 1 ? '1 class' : `${n} classes`;
-    case 'label':
-    case 'missing-label':
-      return n === 1 ? '1 label' : `${n} labels`;
-    case 'integration':
-      return n === 1 ? '1 integration' : `${n} integrations`;
-    case 'entity':
-      return n === 1 ? '1 entity' : `${n} entities`;
-    default:
-      return `${n}`;
-  }
+  const base = countBaseForKind(sample.kind);
+  if (!base) return `${n}`;
+  return tn(hass, base, n);
 }
 
-export function sectionLabel(node: TreeNode): string {
+export function sectionLabel(node: TreeNode, hass?: HomeAssistant): string {
   if (node.children.length === 0) return '';
   const sample =
     node.children.find((c) => !c.kind.startsWith('missing-')) ??
     node.children[0];
-  switch (sample.kind) {
-    case 'floor':
-      return 'FLOORS';
-    case 'area':
-    case 'missing-area':
-      return 'AREAS';
-    case 'device':
-    case 'missing-device':
-      return 'DEVICES';
-    case 'domain':
-      return 'DOMAINS';
-    case 'device-class':
-    case 'missing-class':
-      return 'DEVICE CLASSES';
-    case 'label':
-    case 'missing-label':
-      return 'LABELS';
-    case 'integration':
-      return 'INTEGRATIONS';
-    case 'entity':
-      return 'ENTITIES';
-    default:
-      return '';
-  }
+  const key = sectionKeyForKind(sample.kind);
+  return key ? t(hass, key) : '';
 }
