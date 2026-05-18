@@ -4,6 +4,7 @@
   "private": true,
   "type": "module",
   "description": "Home Assistant Lovelace card: Advanced Entity Selector Card",
+  "license": "MIT",
   "scripts": {
     "build": "rollup -c",
     "watch": "rollup -c -w",
