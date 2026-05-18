@@ -16,7 +16,8 @@ import {
   type TreeNode,
 } from './hierarchy';
 import { collectEntities, entityContext, matchesQuery } from './search';
-import { FORMAT_LABELS, formatEntities, type CopyFormat } from './format';
+import { formatEntities, formatLabel, type CopyFormat } from './format';
+import { t, tn } from './i18n';
 
 const DEFAULT_HIERARCHIES: HierarchyId[] = [
   'floor_area_device',
@@ -25,12 +26,6 @@ const DEFAULT_HIERARCHIES: HierarchyId[] = [
   'integration_device',
 ];
 
-const HIERARCHY_LABELS: Record<HierarchyId, string> = {
-  floor_area_device: 'Floor·Area·Device',
-  domain_class: 'Domain',
-  label: 'Label',
-  integration_device: 'Integration',
-};
 
 const COPY_FEEDBACK_MS = 1200;
 const TOAST_MS = 1800;
@@ -146,19 +141,19 @@ export class AdvancedEntitySelectorCard extends LitElement implements LovelaceCa
         <div class="header">
           <span class="title">
             ${this._config.title ?? CARD_NAME}${this._showAll
-              ? html`<span class="title-mode"> · All</span>`
+              ? html`<span class="title-mode"> · ${t(this.hass, 'card.mode.all')}</span>`
               : nothing}${this._selectMode
-              ? html`<span class="selecting"> · Selecting</span>`
+              ? html`<span class="selecting"> · ${t(this.hass, 'card.mode.selecting')}</span>`
               : nothing}
           </span>
           <span class="count">${headerCount}</span>
           <span class="header-actions">
             ${this._selectMode
               ? html`<button class="hbtn" @click=${this._exitSelectMode}>
-                  ✕ Done
+                  ${t(this.hass, 'card.btn.done')}
                 </button>`
               : html`<button class="hbtn" @click=${this._enterSelectMode}>
-                  ⊕ Select
+                  ${t(this.hass, 'card.btn.select')}
                 </button>`}
           </span>
         </div>
@@ -171,9 +166,10 @@ export class AdvancedEntitySelectorCard extends LitElement implements LovelaceCa
           : current.children.length === 0
             ? html`<div class="empty">
                 ${tree.totalCount === 0
-                  ? html`No entities found for label(s):
-                      ${this._config.labels.join(', ')}`
-                  : html`Nothing here.`}
+                  ? t(this.hass, 'card.empty.no_entities', {
+                      labels: this._config.labels.join(', '),
+                    })
+                  : t(this.hass, 'card.empty.nothing_here')}
               </div>`
             : this._renderChildren(current)}
         ${this._selectMode ? this._renderBottomBar() : nothing}
@@ -218,7 +214,7 @@ export class AdvancedEntitySelectorCard extends LitElement implements LovelaceCa
               ?aria-selected=${this._hierarchy === h}
               @click=${() => this._switchHierarchy(h)}
             >
-              ${HIERARCHY_LABELS[h]}
+              ${t(this.hass, `hierarchy.${h}` as const)}
             </button>
           `,
         )}
@@ -230,7 +226,7 @@ export class AdvancedEntitySelectorCard extends LitElement implements LovelaceCa
       >
         ${enabled.map(
           (h) => html`<option value=${h} ?selected=${this._hierarchy === h}>
-            ${HIERARCHY_LABELS[h]}
+            ${t(this.hass, `hierarchy.${h}` as const)}
           </option>`,
         )}
       </select>
@@ -243,7 +239,7 @@ export class AdvancedEntitySelectorCard extends LitElement implements LovelaceCa
         <input
           class="search"
           type="search"
-          placeholder="Search…"
+          placeholder=${t(this.hass, 'card.search_placeholder')}
           .value=${this._search}
           @input=${this._onSearch}
         />
@@ -253,7 +249,7 @@ export class AdvancedEntitySelectorCard extends LitElement implements LovelaceCa
             .checked=${this._showAll}
             @change=${this._onAllToggle}
           />
-          <span>All entities</span>
+          <span>${t(this.hass, 'card.toggle.all_entities')}</span>
         </label>
         <label class="diag-toggle">
           <input
@@ -261,7 +257,7 @@ export class AdvancedEntitySelectorCard extends LitElement implements LovelaceCa
             .checked=${this._showDiagnostic}
             @change=${this._onDiagToggle}
           />
-          <span>Show diagnostic</span>
+          <span>${t(this.hass, 'card.toggle.show_diagnostic')}</span>
         </label>
       </div>
     `;
@@ -273,7 +269,7 @@ export class AdvancedEntitySelectorCard extends LitElement implements LovelaceCa
   ): TemplateResult | typeof nothing {
     if (validPath.length === 0) return nothing;
     const segments: { label: string; depth: number }[] = [
-      { label: 'Home', depth: 0 },
+      { label: t(this.hass, 'card.breadcrumb.home'), depth: 0 },
     ];
     let current = tree;
     for (let i = 0; i < validPath.length; i++) {
@@ -321,7 +317,7 @@ export class AdvancedEntitySelectorCard extends LitElement implements LovelaceCa
         >
           <span class="recents-title">
             <ha-icon icon="mdi:history"></ha-icon>
-            RECENTS (${validRecents.length})
+            ${t(this.hass, 'card.recents')} (${validRecents.length})
           </span>
           <ha-icon
             class="recents-chevron ${collapsed ? '' : 'expanded'}"
@@ -389,14 +385,14 @@ export class AdvancedEntitySelectorCard extends LitElement implements LovelaceCa
     const isLeafLevel = node.children[0]?.kind === 'entity';
     return html`
       <div class="section-label">
-        <span>${sectionLabel(node)}</span>
+        <span>${sectionLabel(node, this.hass)}</span>
         ${this._selectMode && isLeafLevel
           ? html`<span class="actions">
               <button class="link-btn" @click=${() => this._selectAll(node)}>
-                Select all
+                ${t(this.hass, 'card.btn.select_all')}
               </button>
               <button class="link-btn" @click=${this._clearSelection}>
-                Clear
+                ${t(this.hass, 'card.btn.clear')}
               </button>
             </span>`
           : nothing}
@@ -420,7 +416,7 @@ export class AdvancedEntitySelectorCard extends LitElement implements LovelaceCa
       >
         <div class="row-main">
           <div class="row-name">${node.name}</div>
-          <div class="row-id">${childKindLabel(node)}</div>
+          <div class="row-id">${childKindLabel(node, this.hass)}</div>
         </div>
         <ha-icon class="chevron" icon="mdi:chevron-right"></ha-icon>
       </div>
@@ -463,7 +459,7 @@ export class AdvancedEntitySelectorCard extends LitElement implements LovelaceCa
         ${stateText ? html`<div class="row-state">${stateText}</div>` : nothing}
         <ha-icon-button
           class="copy"
-          .label=${copied ? 'Copied' : 'Copy entity ID'}
+          .label=${copied ? t(this.hass, 'card.copy.copied') : t(this.hass, 'card.copy.label')}
           @click=${(e: Event) => this._copy(e, id)}
         >
           <ha-icon
@@ -482,23 +478,23 @@ export class AdvancedEntitySelectorCard extends LitElement implements LovelaceCa
 
     return html`
       <div class="section-label">
-        <span>${matches.length} ${matches.length === 1 ? 'MATCH' : 'MATCHES'}</span>
+        <span>${matches.length} ${tn(this.hass, 'card.matches', matches.length)}</span>
         ${this._selectMode && matches.length > 0
           ? html`<span class="actions">
               <button
                 class="link-btn"
                 @click=${() => this._selectIds(matches.map((n) => n.entityId!))}
               >
-                Select all
+                ${t(this.hass, 'card.btn.select_all')}
               </button>
               <button class="link-btn" @click=${this._clearSelection}>
-                Clear
+                ${t(this.hass, 'card.btn.clear')}
               </button>
             </span>`
           : nothing}
       </div>
       ${matches.length === 0
-        ? html`<div class="empty">No matches.</div>`
+        ? html`<div class="empty">${t(this.hass, 'card.empty.no_matches')}</div>`
         : html`<div class="list">
             ${matches.map((n) =>
               this._renderEntityRow(n, entityContext(n.entityId!, this.hass)),
@@ -511,13 +507,13 @@ export class AdvancedEntitySelectorCard extends LitElement implements LovelaceCa
     const n = this._selected.size;
     return html`
       <div class="bottom-bar">
-        <span class="count-summary">${n} selected</span>
+        <span class="count-summary">${t(this.hass, 'card.bottom.selected', { n })}</span>
         <label class="format-pick">
-          Format:
+          ${t(this.hass, 'card.bottom.format')}
           <select .value=${this._format} @change=${this._onFormatChange}>
             ${(['csv', 'yaml', 'json'] as CopyFormat[]).map(
               (f) => html`<option value=${f} ?selected=${this._format === f}>
-                ${FORMAT_LABELS[f]}
+                ${formatLabel(this.hass, f)}
               </option>`,
             )}
           </select>
@@ -527,7 +523,7 @@ export class AdvancedEntitySelectorCard extends LitElement implements LovelaceCa
           ?disabled=${n === 0}
           @click=${this._bulkCopy}
         >
-          Copy
+          ${t(this.hass, 'card.btn.copy')}
         </button>
       </div>
     `;
@@ -592,11 +588,13 @@ export class AdvancedEntitySelectorCard extends LitElement implements LovelaceCa
     const text = formatEntities(ids, this._format);
     const ok = await copyText(text);
     if (!ok) {
-      this._showToast('Copy failed');
+      this._showToast(t(this.hass, 'card.copy.failed'));
       return;
     }
     this._showToast(
-      `Copied ${ids.length} ${ids.length === 1 ? 'entity' : 'entities'} as ${FORMAT_LABELS[this._format]}`,
+      tn(this.hass, 'card.copy.success', ids.length, {
+        format: formatLabel(this.hass, this._format),
+      }),
     );
   }
 
