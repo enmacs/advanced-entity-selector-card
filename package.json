@@ -8,7 +8,8 @@
   "scripts": {
     "build": "rollup -c",
     "watch": "rollup -c -w",
-    "clean": "rimraf dist"
+    "clean": "rimraf dist",
+    "release": "scripts/release.sh"
   },
   "dependencies": {
     "custom-card-helpers": "^1.9.0",

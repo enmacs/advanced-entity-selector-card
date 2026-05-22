@@ -32,7 +32,9 @@
       "Bash(git -C /Users/xian/projects/enmacs/advanced-entity-selector-card add README.md info.md docs/screenshot.png)",
       "Bash(git -C /Users/xian/projects/enmacs/advanced-entity-selector-card commit -m ' *)",
       "Bash(git -C /Users/xian/projects/enmacs/advanced-entity-selector-card tag -a v0.2.0 -m \"v0.2.0\")",
-      "Bash(git -C /Users/xian/projects/enmacs/advanced-entity-selector-card push origin v0.2.0)"
+      "Bash(git -C /Users/xian/projects/enmacs/advanced-entity-selector-card push origin v0.2.0)",
+      "Bash(chmod +x scripts/release.sh)",
+      "Bash(bash -n scripts/release.sh)"
     ]
   }
 }
