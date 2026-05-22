@@ -74,6 +74,27 @@ npm run build
 
 Output: `dist/advanced-entity-selector-card.js`.
 
+## Releasing a new version (maintainers)
+
+HACS installs the bundle from the asset attached to each GitHub release, not from the repo (`dist/` is gitignored). To cut a release, run:
+
+```shell
+npm run release -- 0.3.1
+# or directly:
+./scripts/release.sh 0.3.1
+```
+
+The script:
+
+1. Verifies you're on `main`, the tree is clean, the tag doesn't already exist, and you're not diverged from `origin/main`.
+2. Bumps the version in `package.json` and `src/const.ts` (skipped if both already match), commits the bump.
+3. Runs `npm run clean && npm run build` and checks the bundle contains the new version string.
+4. Creates the `v<version>` tag, asks for confirmation, then pushes `main` + tag and runs `gh release create` with `dist/advanced-entity-selector-card.js` attached and auto-generated release notes.
+
+Requirements: [`gh`](https://cli.github.com/) installed and authenticated (`gh auth login`). Pass `--yes` to skip confirmation prompts.
+
+After the release lands, HACS picks it up on its next cache refresh (or trigger it manually from HACS → ⋮ → Reload data).
+
 ## License
 
 MIT
