@@ -11,6 +11,7 @@ const EN = {
   'editor.label.recents_limit': 'Recents limit',
   'editor.label.show_state': 'Show entity state',
   'editor.label.show_diagnostic': 'Include diagnostic entities',
+  'editor.label.show_entity_labels': 'Show entity labels',
 
   // Editor helpers
   'editor.helper.title': 'Header shown at the top of the card. Defaults to the card name.',
@@ -24,6 +25,8 @@ const EN = {
   'editor.helper.show_state': 'Display each entity’s current state next to its name.',
   'editor.helper.show_diagnostic':
     'Expose a toggle to include diagnostic/config entities in the list.',
+  'editor.helper.show_entity_labels':
+    'Default state for the toggle that displays each entity’s labels as chips under its ID.',
 
   // Hierarchy names
   'hierarchy.floor_area_device': 'Floor · Area · Device',
@@ -41,6 +44,7 @@ const EN = {
   'card.btn.copy': 'Copy',
   'card.toggle.all_entities': 'All entities',
   'card.toggle.show_diagnostic': 'Show diagnostic',
+  'card.toggle.show_entity_labels': 'Show labels',
   'card.search_placeholder': 'Search…',
   'card.breadcrumb.home': 'Home',
   'card.recents': 'RECENTS',
@@ -109,6 +113,7 @@ const DE: Partial<Record<I18nKey, string>> = {
   'editor.label.recents_limit': 'Anzahl zuletzt verwendet',
   'editor.label.show_state': 'Entitätsstatus anzeigen',
   'editor.label.show_diagnostic': 'Diagnose-Entitäten einbeziehen',
+  'editor.label.show_entity_labels': 'Labels der Entitäten anzeigen',
 
   'editor.helper.title': 'Überschrift oben auf der Karte. Standard ist der Kartenname.',
   'editor.helper.labels':
@@ -122,6 +127,8 @@ const DE: Partial<Record<I18nKey, string>> = {
     'Den aktuellen Status jeder Entität neben dem Namen anzeigen.',
   'editor.helper.show_diagnostic':
     'Einen Schalter einblenden, mit dem Diagnose- und Konfigurationsentitäten in die Liste aufgenommen werden.',
+  'editor.helper.show_entity_labels':
+    'Voreinstellung für den Schalter, der die Labels jeder Entität als Chips unter der ID anzeigt.',
 
   'hierarchy.floor_area_device': 'Etage · Bereich · Gerät',
   'hierarchy.domain_class': 'Domain · Klasse',
@@ -137,6 +144,7 @@ const DE: Partial<Record<I18nKey, string>> = {
   'card.btn.copy': 'Kopieren',
   'card.toggle.all_entities': 'Alle Entitäten',
   'card.toggle.show_diagnostic': 'Diagnose anzeigen',
+  'card.toggle.show_entity_labels': 'Labels anzeigen',
   'card.search_placeholder': 'Suchen…',
   'card.breadcrumb.home': 'Start',
   'card.recents': 'ZULETZT',

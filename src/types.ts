@@ -13,5 +13,6 @@ export interface AdvancedEntitySelectorCardConfig extends LovelaceCardConfig {
   default_hierarchy?: HierarchyId;
   show_diagnostic?: boolean;
   show_state?: boolean;
+  show_entity_labels?: boolean;
   recents_limit?: number;
 }

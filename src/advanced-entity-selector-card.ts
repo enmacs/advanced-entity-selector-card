@@ -63,6 +63,7 @@ export class AdvancedEntitySelectorCard extends LitElement implements LovelaceCa
   @state() private _search = '';
   @state() private _showDiagnostic = false;
   @state() private _showAll = false;
+  @state() private _showEntityLabels = false;
   @state() private _hierarchy: HierarchyId = 'floor_area_device';
   @state() private _selectMode = false;
   @state() private _selected: Set<string> = new Set();
@@ -82,6 +83,7 @@ export class AdvancedEntitySelectorCard extends LitElement implements LovelaceCa
       default_hierarchy: 'floor_area_device',
       show_diagnostic: false,
       show_state: true,
+      show_entity_labels: false,
       recents_limit: 10,
       ...config,
     };
@@ -89,6 +91,7 @@ export class AdvancedEntitySelectorCard extends LitElement implements LovelaceCa
     this._search = '';
     this._showDiagnostic = !!this._config.show_diagnostic;
     this._showAll = false;
+    this._showEntityLabels = !!this._config.show_entity_labels;
     this._hierarchy = this._enabledHierarchies().includes(
       this._config.default_hierarchy!,
     )
@@ -306,6 +309,14 @@ export class AdvancedEntitySelectorCard extends LitElement implements LovelaceCa
           />
           <span>${t(this.hass, 'card.toggle.show_diagnostic')}</span>
         </label>
+        <label class="diag-toggle">
+          <input
+            type="checkbox"
+            .checked=${this._showEntityLabels}
+            @change=${this._onEntityLabelsToggle}
+          />
+          <span>${t(this.hass, 'card.toggle.show_entity_labels')}</span>
+        </label>
       </div>
     `;
   }
@@ -453,6 +464,7 @@ export class AdvancedEntitySelectorCard extends LitElement implements LovelaceCa
   }
 
   private _renderGroupRow(node: TreeNode): TemplateResult {
+    const labelChips = this._nodeLabelChips(node);
     return html`
       <div
         class="row group"
@@ -464,6 +476,7 @@ export class AdvancedEntitySelectorCard extends LitElement implements LovelaceCa
         <div class="row-main">
           <div class="row-name">${node.name}</div>
           <div class="row-id">${childKindLabel(node, this.hass)}</div>
+          ${this._renderLabelChips(labelChips)}
         </div>
         <ha-icon class="chevron" icon="mdi:chevron-right"></ha-icon>
       </div>
@@ -481,6 +494,7 @@ export class AdvancedEntitySelectorCard extends LitElement implements LovelaceCa
     const copied = this._copiedId === id;
     const subline = contextLabel ? `${contextLabel} · ${id}` : id;
     const selected = this._selected.has(id);
+    const labelChips = this._nodeLabelChips(node);
 
     return html`
       <div
@@ -502,6 +516,7 @@ export class AdvancedEntitySelectorCard extends LitElement implements LovelaceCa
         <div class="row-main">
           <div class="row-name">${node.name}</div>
           <div class="row-id">${subline}</div>
+          ${this._renderLabelChips(labelChips)}
         </div>
         ${stateText ? html`<div class="row-state">${stateText}</div>` : nothing}
         <ha-icon-button
@@ -744,6 +759,64 @@ export class AdvancedEntitySelectorCard extends LitElement implements LovelaceCa
     this._showAll = (e.target as HTMLInputElement).checked;
     this._path = [];
   };
+
+  private _onEntityLabelsToggle = (e: Event): void => {
+    this._showEntityLabels = (e.target as HTMLInputElement).checked;
+  };
+
+  private _nodeLabelIds(node: TreeNode): string[] | undefined {
+    switch (node.kind) {
+      case 'entity':
+        return this.hass.entities?.[node.entityId!]?.labels;
+      case 'device':
+        return this.hass.devices?.[node.id]?.labels;
+      case 'area':
+        return this.hass.areas?.[node.id]?.labels;
+      case 'floor':
+        return this.hass.floors?.[node.id]?.labels;
+      default:
+        return undefined;
+    }
+  }
+
+  private _resolveLabels(ids: string[] | undefined): LabelRegistryEntry[] {
+    if (!ids || ids.length === 0) return [];
+    const registry = this._labels();
+    const byId = new Map(registry.map((l) => [l.label_id, l]));
+    return ids.map(
+      (id) => byId.get(id) ?? { label_id: id, name: id },
+    );
+  }
+
+  private _nodeLabelChips(node: TreeNode): LabelRegistryEntry[] {
+    if (!this._showEntityLabels) return [];
+    if (this._hierarchy === 'label') return [];
+    return this._resolveLabels(this._nodeLabelIds(node));
+  }
+
+  private _renderLabelChips(
+    chips: LabelRegistryEntry[],
+  ): TemplateResult | typeof nothing {
+    if (chips.length === 0) return nothing;
+    return html`<div class="row-labels">
+      ${chips.map(
+        (l) => html`<span
+          class="entity-label-chip"
+          style=${l.color
+            ? `background: var(--label-color-${l.color}, var(--${l.color}-color, var(--secondary-background-color)));`
+            : ''}
+        >
+          ${l.icon
+            ? html`<ha-icon
+                class="entity-label-icon"
+                .icon=${l.icon}
+              ></ha-icon>`
+            : nothing}
+          ${l.name}
+        </span>`,
+      )}
+    </div>`;
+  }
 
   private _displayName(id: string): string {
     const entity = this.hass.entities?.[id];
@@ -1106,6 +1179,27 @@ export class AdvancedEntitySelectorCard extends LitElement implements LovelaceCa
       overflow: hidden;
       text-overflow: ellipsis;
       white-space: nowrap;
+    }
+    .row-labels {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 4px;
+      margin-top: 4px;
+    }
+    .entity-label-chip {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      background: var(--secondary-background-color);
+      color: var(--primary-text-color);
+      border: 1px solid var(--divider-color);
+      border-radius: 10px;
+      padding: 1px 8px;
+      font-size: 0.72rem;
+      line-height: 1.4;
+    }
+    .entity-label-icon {
+      --mdc-icon-size: 12px;
     }
     .row-state {
       flex: 0 0 auto;

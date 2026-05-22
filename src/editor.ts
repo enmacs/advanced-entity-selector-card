@@ -24,6 +24,7 @@ const FIELD_NAMES = [
   'recents_limit',
   'show_state',
   'show_diagnostic',
+  'show_entity_labels',
 ] as const;
 type FieldName = (typeof FIELD_NAMES)[number];
 
@@ -87,6 +88,7 @@ export class AdvancedEntitySelectorCardEditor
         schema: [
           { name: 'show_state', selector: { boolean: {} } },
           { name: 'show_diagnostic', selector: { boolean: {} } },
+          { name: 'show_entity_labels', selector: { boolean: {} } },
         ],
       },
     ];
