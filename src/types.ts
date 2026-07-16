@@ -3,6 +3,7 @@ import type { LovelaceCardConfig } from 'custom-card-helpers';
 export type HierarchyId =
   | 'floor_area_device'
   | 'domain_class'
+  | 'class_unit'
   | 'label'
   | 'integration_device';
 

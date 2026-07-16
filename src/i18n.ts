@@ -31,6 +31,7 @@ const EN = {
   // Hierarchy names
   'hierarchy.floor_area_device': 'Floor · Area · Device',
   'hierarchy.domain_class': 'Domain · Class',
+  'hierarchy.class_unit': 'Class · Unit',
   'hierarchy.label': 'Label',
   'hierarchy.integration_device': 'Integration · Device',
 
@@ -75,6 +76,7 @@ const EN = {
   'section.devices': 'DEVICES',
   'section.domains': 'DOMAINS',
   'section.device_classes': 'DEVICE CLASSES',
+  'section.units': 'UNITS',
   'section.labels': 'LABELS',
   'section.integrations': 'INTEGRATIONS',
   'section.entities': 'ENTITIES',
@@ -90,6 +92,8 @@ const EN = {
   'count.domain.other': '{n} domains',
   'count.class.one': '1 class',
   'count.class.other': '{n} classes',
+  'count.unit.one': '1 unit',
+  'count.unit.other': '{n} units',
   'count.label.one': '1 label',
   'count.label.other': '{n} labels',
   'count.integration.one': '1 integration',
@@ -132,6 +136,7 @@ const DE: Partial<Record<I18nKey, string>> = {
 
   'hierarchy.floor_area_device': 'Etage · Bereich · Gerät',
   'hierarchy.domain_class': 'Domain · Klasse',
+  'hierarchy.class_unit': 'Klasse · Einheit',
   'hierarchy.label': 'Label',
   'hierarchy.integration_device': 'Integration · Gerät',
 
@@ -173,6 +178,7 @@ const DE: Partial<Record<I18nKey, string>> = {
   'section.devices': 'GERÄTE',
   'section.domains': 'DOMAINS',
   'section.device_classes': 'GERÄTEKLASSEN',
+  'section.units': 'EINHEITEN',
   'section.labels': 'LABELS',
   'section.integrations': 'INTEGRATIONEN',
   'section.entities': 'ENTITÄTEN',
@@ -187,6 +193,8 @@ const DE: Partial<Record<I18nKey, string>> = {
   'count.domain.other': '{n} Domains',
   'count.class.one': '1 Klasse',
   'count.class.other': '{n} Klassen',
+  'count.unit.one': '1 Einheit',
+  'count.unit.other': '{n} Einheiten',
   'count.label.one': '1 Label',
   'count.label.other': '{n} Labels',
   'count.integration.one': '1 Integration',

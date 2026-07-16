@@ -22,6 +22,7 @@ import { t, tn } from './i18n';
 const DEFAULT_HIERARCHIES: HierarchyId[] = [
   'floor_area_device',
   'domain_class',
+  'class_unit',
   'label',
   'integration_device',
 ];

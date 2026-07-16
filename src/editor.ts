@@ -12,6 +12,7 @@ type HaFormSchema = ReadonlyArray<Record<string, unknown>>;
 const HIERARCHY_IDS: ReadonlyArray<HierarchyId> = [
   'floor_area_device',
   'domain_class',
+  'class_unit',
   'label',
   'integration_device',
 ];

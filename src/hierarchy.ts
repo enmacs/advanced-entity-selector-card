@@ -9,12 +9,14 @@ export type NodeKind =
   | 'device'
   | 'domain'
   | 'device-class'
+  | 'unit'
   | 'label'
   | 'integration'
   | 'missing-floor'
   | 'missing-area'
   | 'missing-device'
   | 'missing-class'
+  | 'missing-unit'
   | 'missing-label'
   | 'entity';
 
@@ -38,6 +40,8 @@ export function buildTree(
       return buildSpatialTree(workingSet, hass);
     case 'domain_class':
       return buildDomainTree(workingSet, hass);
+    case 'class_unit':
+      return buildUnitTree(workingSet, hass);
     case 'label':
       return buildLabelTree(workingSet, hass, configLabels);
     case 'integration_device':
@@ -223,6 +227,83 @@ function buildDomainTree(workingSet: string[], hass: HomeAssistant): TreeNode {
   sortNodes(domainNodes);
 
   return rootNode(domainNodes, workingSet.length);
+}
+
+function buildUnitTree(workingSet: string[], hass: HomeAssistant): TreeNode {
+  const classes = new Map<string | null, Map<string | null, string[]>>();
+
+  for (const id of workingSet) {
+    const stateObj = hass.states[id];
+    const cls =
+      (stateObj?.attributes?.device_class as string | undefined) ?? null;
+    const unit = stateObj?.attributes?.unit_of_measurement ?? null;
+
+    let units = classes.get(cls);
+    if (!units) {
+      units = new Map();
+      classes.set(cls, units);
+    }
+    let entities = units.get(unit);
+    if (!entities) {
+      entities = [];
+      units.set(unit, entities);
+    }
+    entities.push(id);
+  }
+
+  const classNodes: TreeNode[] = [];
+  for (const [cls, units] of classes) {
+    const onlyNullUnit = units.size === 1 && units.has(null);
+    let children: TreeNode[];
+    if (onlyNullUnit) {
+      children = units.get(null)!.map((id) => entityNode(id, hass));
+      sortNodes(children);
+    } else {
+      children = [];
+      for (const [unit, entityIds] of units) {
+        const entityChildren = entityIds.map((id) => entityNode(id, hass));
+        sortNodes(entityChildren);
+        if (unit === null) {
+          children.push({
+            id: '__no_unit__',
+            name: 'No unit',
+            kind: 'missing-unit',
+            children: entityChildren,
+            totalCount: entityChildren.length,
+          });
+        } else {
+          children.push({
+            id: unit,
+            name: unit,
+            kind: 'unit',
+            children: entityChildren,
+            totalCount: entityChildren.length,
+          });
+        }
+      }
+      sortNodes(children);
+    }
+    if (cls === null) {
+      classNodes.push({
+        id: '__no_class__',
+        name: 'No class',
+        kind: 'missing-class',
+        children,
+        totalCount: countAll(children),
+      });
+    } else {
+      classNodes.push({
+        id: cls,
+        name: titleize(cls),
+        kind: 'device-class',
+        children,
+        totalCount: countAll(children),
+      });
+    }
+  }
+  sortNodes(classNodes);
+
+  return rootNode(classNodes, workingSet.length);
 }
 
 function buildLabelTree(
@@ -438,6 +519,7 @@ type CountBase =
   | 'count.device'
   | 'count.domain'
   | 'count.class'
+  | 'count.unit'
   | 'count.label'
   | 'count.integration'
   | 'count.entity';
@@ -457,6 +539,9 @@ function countBaseForKind(kind: NodeKind): CountBase | null {
     case 'device-class':
     case 'missing-class':
       return 'count.class';
+    case 'unit':
+    case 'missing-unit':
+      return 'count.unit';
     case 'label':
     case 'missing-label':
       return 'count.label';
@@ -484,6 +569,9 @@ function sectionKeyForKind(kind: NodeKind): I18nKey | null {
     case 'device-class':
     case 'missing-class':
       return 'section.device_classes';
+    case 'unit':
+    case 'missing-unit':
+      return 'section.units';
     case 'label':
     case 'missing-label':
       return 'section.labels';
