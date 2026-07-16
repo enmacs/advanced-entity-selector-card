@@ -31,7 +31,8 @@ const EN = {
   // Hierarchy names
   'hierarchy.floor_area_device': 'Floor · Area · Device',
   'hierarchy.domain_class': 'Domain · Class',
-  'hierarchy.class_unit': 'Class · Unit',
+  'hierarchy.class_unit': 'Class · Device · Unit',
+  'hierarchy.class_unit_device': 'Class · Unit · Device',
   'hierarchy.label': 'Label',
   'hierarchy.integration_device': 'Integration · Device',
 
@@ -136,7 +137,8 @@ const DE: Partial<Record<I18nKey, string>> = {
 
   'hierarchy.floor_area_device': 'Etage · Bereich · Gerät',
   'hierarchy.domain_class': 'Domain · Klasse',
-  'hierarchy.class_unit': 'Klasse · Einheit',
+  'hierarchy.class_unit': 'Klasse · Gerät · Einheit',
+  'hierarchy.class_unit_device': 'Klasse · Einheit · Gerät',
   'hierarchy.label': 'Label',
   'hierarchy.integration_device': 'Integration · Gerät',
 

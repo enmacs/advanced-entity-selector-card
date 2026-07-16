@@ -42,6 +42,8 @@ export function buildTree(
       return buildDomainTree(workingSet, hass);
     case 'class_unit':
       return buildUnitTree(workingSet, hass);
+    case 'class_unit_device':
+      return buildUnitDeviceTree(workingSet, hass);
     case 'label':
       return buildLabelTree(workingSet, hass, configLabels);
     case 'integration_device':
@@ -230,18 +232,27 @@ function buildDomainTree(workingSet: string[], hass: HomeAssistant): TreeNode {
 }
 
 function buildUnitTree(workingSet: string[], hass: HomeAssistant): TreeNode {
-  const classes = new Map<string | null, Map<string | null, string[]>>();
+  const classes = new Map<
+    string | null,
+    Map<string | null, Map<string | null, string[]>>
+  >();
 
   for (const id of workingSet) {
     const stateObj = hass.states[id];
     const cls =
       (stateObj?.attributes?.device_class as string | undefined) ?? null;
+    const deviceId = hass.entities?.[id]?.device_id ?? null;
     const unit = stateObj?.attributes?.unit_of_measurement ?? null;
 
-    let units = classes.get(cls);
+    let devices = classes.get(cls);
+    if (!devices) {
+      devices = new Map();
+      classes.set(cls, devices);
+    }
+    let units = devices.get(deviceId);
     if (!units) {
       units = new Map();
-      classes.set(cls, units);
+      devices.set(deviceId, units);
     }
     let entities = units.get(unit);
     if (!entities) {
@@ -252,52 +263,198 @@ function buildUnitTree(workingSet: string[], hass: HomeAssistant): TreeNode {
   }
 
   const classNodes: TreeNode[] = [];
-  for (const [cls, units] of classes) {
-    const onlyNullUnit = units.size === 1 && units.has(null);
-    let children: TreeNode[];
-    if (onlyNullUnit) {
-      children = units.get(null)!.map((id) => entityNode(id, hass));
-      sortNodes(children);
-    } else {
-      children = [];
-      for (const [unit, entityIds] of units) {
-        const entityChildren = entityIds.map((id) => entityNode(id, hass));
-        sortNodes(entityChildren);
-        if (unit === null) {
-          children.push({
-            id: '__no_unit__',
-            name: 'No unit',
-            kind: 'missing-unit',
-            children: entityChildren,
-            totalCount: entityChildren.length,
-          });
-        } else {
-          children.push({
-            id: unit,
-            name: unit,
-            kind: 'unit',
-            children: entityChildren,
-            totalCount: entityChildren.length,
-          });
+  for (const [cls, devices] of classes) {
+    const deviceNodes: TreeNode[] = [];
+    for (const [deviceId, units] of devices) {
+      const onlyNullUnit = units.size === 1 && units.has(null);
+      let unitChildren: TreeNode[];
+      if (onlyNullUnit) {
+        unitChildren = units.get(null)!.map((id) => entityNode(id, hass));
+        sortNodes(unitChildren);
+      } else {
+        unitChildren = [];
+        for (const [unit, entityIds] of units) {
+          const entityChildren = entityIds.map((id) => entityNode(id, hass));
+          sortNodes(entityChildren);
+          if (unit === null) {
+            unitChildren.push({
+              id: '__no_unit__',
+              name: 'No unit',
+              kind: 'missing-unit',
+              children: entityChildren,
+              totalCount: entityChildren.length,
+            });
+          } else {
+            unitChildren.push({
+              id: unit,
+              name: unit,
+              kind: 'unit',
+              children: entityChildren,
+              totalCount: entityChildren.length,
+            });
+          }
         }
+        sortNodes(unitChildren);
       }
-      sortNodes(children);
+      if (deviceId === null) {
+        deviceNodes.push({
+          id: '__no_device__',
+          name: 'Device not available',
+          kind: 'missing-device',
+          children: unitChildren,
+          totalCount: countAll(unitChildren),
+        });
+      } else {
+        deviceNodes.push({
+          id: deviceId,
+          name: deviceDisplayName(hass.devices?.[deviceId], deviceId),
+          kind: 'device',
+          children: unitChildren,
+          totalCount: countAll(unitChildren),
+        });
+      }
     }
+    sortNodes(deviceNodes);
     if (cls === null) {
       classNodes.push({
         id: '__no_class__',
         name: 'No class',
         kind: 'missing-class',
-        children,
-        totalCount: countAll(children),
+        children: deviceNodes,
+        totalCount: countAll(deviceNodes),
       });
     } else {
       classNodes.push({
         id: cls,
         name: titleize(cls),
         kind: 'device-class',
-        children,
-        totalCount: countAll(children),
+        children: deviceNodes,
+        totalCount: countAll(deviceNodes),
+      });
+    }
+  }
+  sortNodes(classNodes);
+
+  return rootNode(classNodes, workingSet.length);
+}
+
+// Turns a device-keyed bucket into device nodes (each with its entity leaves),
+// collapsing to bare entity nodes when no entity has a device.
+function deviceNodes(
+  byDevice: Map<string | null, string[]>,
+  hass: HomeAssistant,
+): TreeNode[] {
+  const onlyNullDevice = byDevice.size === 1 && byDevice.has(null);
+  if (onlyNullDevice) {
+    const entityChildren = byDevice.get(null)!.map((id) => entityNode(id, hass));
+    sortNodes(entityChildren);
+    return entityChildren;
+  }
+  const nodes: TreeNode[] = [];
+  for (const [deviceId, entityIds] of byDevice) {
+    const entityChildren = entityIds.map((id) => entityNode(id, hass));
+    sortNodes(entityChildren);
+    if (deviceId === null) {
+      nodes.push({
+        id: '__no_device__',
+        name: 'Device not available',
+        kind: 'missing-device',
+        children: entityChildren,
+        totalCount: entityChildren.length,
+      });
+    } else {
+      nodes.push({
+        id: deviceId,
+        name: deviceDisplayName(hass.devices?.[deviceId], deviceId),
+        kind: 'device',
+        children: entityChildren,
+        totalCount: entityChildren.length,
+      });
+    }
+  }
+  sortNodes(nodes);
+  return nodes;
+}
+
+function buildUnitDeviceTree(
+  workingSet: string[],
+  hass: HomeAssistant,
+): TreeNode {
+  const classes = new Map<
+    string | null,
+    Map<string | null, Map<string | null, string[]>>
+  >();
+
+  for (const id of workingSet) {
+    const stateObj = hass.states[id];
+    const cls =
+      (stateObj?.attributes?.device_class as string | undefined) ?? null;
+    const unit = stateObj?.attributes?.unit_of_measurement ?? null;
+    const deviceId = hass.entities?.[id]?.device_id ?? null;
+
+    let units = classes.get(cls);
+    if (!units) {
+      units = new Map();
+      classes.set(cls, units);
+    }
+    let devices = units.get(unit);
+    if (!devices) {
+      devices = new Map();
+      units.set(unit, devices);
+    }
+    let entities = devices.get(deviceId);
+    if (!entities) {
+      entities = [];
+      devices.set(deviceId, entities);
+    }
+    entities.push(id);
+  }
+
+  const classNodes: TreeNode[] = [];
+  for (const [cls, units] of classes) {
+    const onlyNullUnit = units.size === 1 && units.has(null);
+    let classChildren: TreeNode[];
+    if (onlyNullUnit) {
+      classChildren = deviceNodes(units.get(null)!, hass);
+    } else {
+      classChildren = [];
+      for (const [unit, byDevice] of units) {
+        const devChildren = deviceNodes(byDevice, hass);
+        if (unit === null) {
+          classChildren.push({
+            id: '__no_unit__',
+            name: 'No unit',
+            kind: 'missing-unit',
+            children: devChildren,
+            totalCount: countAll(devChildren),
+          });
+        } else {
+          classChildren.push({
+            id: unit,
+            name: unit,
+            kind: 'unit',
+            children: devChildren,
+            totalCount: countAll(devChildren),
+          });
+        }
+      }
+      sortNodes(classChildren);
+    }
+    if (cls === null) {
+      classNodes.push({
+        id: '__no_class__',
+        name: 'No class',
+        kind: 'missing-class',
+        children: classChildren,
+        totalCount: countAll(classChildren),
+      });
+    } else {
+      classNodes.push({
+        id: cls,
+        name: titleize(cls),
+        kind: 'device-class',
+        children: classChildren,
+        totalCount: countAll(classChildren),
       });
     }
   }
