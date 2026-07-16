@@ -1,6 +1,6 @@
 {
   "name": "advanced-entity-selector-card",
-  "version": "0.4.0",
+  "version": "0.4.1",
   "private": true,
   "type": "module",
   "description": "Home Assistant Lovelace card: Advanced Entity Selector Card",
