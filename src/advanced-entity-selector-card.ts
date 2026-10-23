@@ -21,11 +21,11 @@ import { t, tn } from './i18n';
 
 const DEFAULT_HIERARCHIES: HierarchyId[] = [
   'floor_area_device',
-  'domain_class',
-  'class_unit',
-  'class_unit_device',
   'label',
   'integration_device',
+  'device',
+  'label_device',
+  'label_integration_device',
 ];
 
 
@@ -243,6 +243,7 @@ export class AdvancedEntitySelectorCard extends LitElement implements LovelaceCa
       this._hierarchy,
       workingSet,
       this.hass,
+      new Map(this._labels().map((l) => [l.label_id, l.name])),
       this._showAll ? [] : this._config.labels,
     );
   }

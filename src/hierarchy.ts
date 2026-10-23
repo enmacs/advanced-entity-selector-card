@@ -33,7 +33,8 @@ export function buildTree(
   hierarchy: HierarchyId,
   workingSet: string[],
   hass: HomeAssistant,
-  configLabels: string[],
+  labelNames: Map<string, string>,
+  onlyLabels: string[],
 ): TreeNode {
   switch (hierarchy) {
     case 'floor_area_device':
@@ -45,9 +46,20 @@ export function buildTree(
     case 'class_unit_device':
       return buildUnitDeviceTree(workingSet, hass);
     case 'label':
-      return buildLabelTree(workingSet, hass, configLabels);
+      return buildLabelTree(workingSet, hass, labelNames, onlyLabels);
     case 'integration_device':
       return buildIntegrationTree(workingSet, hass);
+    case 'device':
+      return buildDeviceTree(workingSet, hass);
+    case 'label_device':
+      return buildLabelDeviceTree(workingSet, hass, labelNames, onlyLabels);
+    case 'label_integration_device':
+      return buildLabelIntegrationDeviceTree(
+        workingSet,
+        hass,
+        labelNames,
+        onlyLabels,
+      );
   }
 }
 
@@ -266,36 +278,29 @@ function buildUnitTree(workingSet: string[], hass: HomeAssistant): TreeNode {
   for (const [cls, devices] of classes) {
     const deviceNodes: TreeNode[] = [];
     for (const [deviceId, units] of devices) {
-      const onlyNullUnit = units.size === 1 && units.has(null);
-      let unitChildren: TreeNode[];
-      if (onlyNullUnit) {
-        unitChildren = units.get(null)!.map((id) => entityNode(id, hass));
-        sortNodes(unitChildren);
-      } else {
-        unitChildren = [];
-        for (const [unit, entityIds] of units) {
-          const entityChildren = entityIds.map((id) => entityNode(id, hass));
-          sortNodes(entityChildren);
-          if (unit === null) {
-            unitChildren.push({
-              id: '__no_unit__',
-              name: 'No unit',
-              kind: 'missing-unit',
-              children: entityChildren,
-              totalCount: entityChildren.length,
-            });
-          } else {
-            unitChildren.push({
-              id: unit,
-              name: unit,
-              kind: 'unit',
-              children: entityChildren,
-              totalCount: entityChildren.length,
-            });
-          }
+      const unitChildren: TreeNode[] = [];
+      for (const [unit, entityIds] of units) {
+        const entityChildren = entityIds.map((id) => entityNode(id, hass));
+        sortNodes(entityChildren);
+        if (unit === null) {
+          unitChildren.push({
+            id: '__no_unit__',
+            name: 'No unit',
+            kind: 'missing-unit',
+            children: entityChildren,
+            totalCount: entityChildren.length,
+          });
+        } else {
+          unitChildren.push({
+            id: unit,
+            name: unit,
+            kind: 'unit',
+            children: entityChildren,
+            totalCount: entityChildren.length,
+          });
         }
-        sortNodes(unitChildren);
       }
+      sortNodes(unitChildren);
       if (deviceId === null) {
         deviceNodes.push({
           id: '__no_device__',
@@ -338,18 +343,11 @@ function buildUnitTree(workingSet: string[], hass: HomeAssistant): TreeNode {
   return rootNode(classNodes, workingSet.length);
 }
 
-// Turns a device-keyed bucket into device nodes (each with its entity leaves),
-// collapsing to bare entity nodes when no entity has a device.
+// Turns a device-keyed bucket into device nodes (each with its entity leaves).
 function deviceNodes(
   byDevice: Map<string | null, string[]>,
   hass: HomeAssistant,
 ): TreeNode[] {
-  const onlyNullDevice = byDevice.size === 1 && byDevice.has(null);
-  if (onlyNullDevice) {
-    const entityChildren = byDevice.get(null)!.map((id) => entityNode(id, hass));
-    sortNodes(entityChildren);
-    return entityChildren;
-  }
   const nodes: TreeNode[] = [];
   for (const [deviceId, entityIds] of byDevice) {
     const entityChildren = entityIds.map((id) => entityNode(id, hass));
@@ -412,34 +410,28 @@ function buildUnitDeviceTree(
 
   const classNodes: TreeNode[] = [];
   for (const [cls, units] of classes) {
-    const onlyNullUnit = units.size === 1 && units.has(null);
-    let classChildren: TreeNode[];
-    if (onlyNullUnit) {
-      classChildren = deviceNodes(units.get(null)!, hass);
-    } else {
-      classChildren = [];
-      for (const [unit, byDevice] of units) {
-        const devChildren = deviceNodes(byDevice, hass);
-        if (unit === null) {
-          classChildren.push({
-            id: '__no_unit__',
-            name: 'No unit',
-            kind: 'missing-unit',
-            children: devChildren,
-            totalCount: countAll(devChildren),
-          });
-        } else {
-          classChildren.push({
-            id: unit,
-            name: unit,
-            kind: 'unit',
-            children: devChildren,
-            totalCount: countAll(devChildren),
-          });
-        }
+    const classChildren: TreeNode[] = [];
+    for (const [unit, byDevice] of units) {
+      const devChildren = deviceNodes(byDevice, hass);
+      if (unit === null) {
+        classChildren.push({
+          id: '__no_unit__',
+          name: 'No unit',
+          kind: 'missing-unit',
+          children: devChildren,
+          totalCount: countAll(devChildren),
+        });
+      } else {
+        classChildren.push({
+          id: unit,
+          name: unit,
+          kind: 'unit',
+          children: devChildren,
+          totalCount: countAll(devChildren),
+        });
       }
-      sortNodes(classChildren);
     }
+    sortNodes(classChildren);
     if (cls === null) {
       classNodes.push({
         id: '__no_class__',
@@ -466,15 +458,19 @@ function buildUnitDeviceTree(
 function buildLabelTree(
   workingSet: string[],
   hass: HomeAssistant,
-  configLabels: string[],
+  labelNames: Map<string, string>,
+  onlyLabels: string[],
+  childBuilder?: (entityIds: string[]) => TreeNode[],
 ): TreeNode {
-  const exclude = new Set(configLabels);
+  const only = new Set(onlyLabels);
   const buckets = new Map<string, string[]>();
   const noLabels: string[] = [];
 
   for (const id of workingSet) {
     const labels = effectiveLabels(id, hass);
-    for (const l of exclude) labels.delete(l);
+    if (only.size > 0) {
+      for (const l of [...labels]) if (!only.has(l)) labels.delete(l);
+    }
     if (labels.size === 0) {
       noLabels.push(id);
       continue;
@@ -489,27 +485,32 @@ function buildLabelTree(
     }
   }
 
+  const buildChildren = (ids: string[]): TreeNode[] => {
+    if (childBuilder) return childBuilder(ids);
+    const entityChildren = ids.map((id) => entityNode(id, hass));
+    sortNodes(entityChildren);
+    return entityChildren;
+  };
+
   const labelNodes: TreeNode[] = [];
   for (const [label, entityIds] of buckets) {
-    const entityChildren = entityIds.map((id) => entityNode(id, hass));
-    sortNodes(entityChildren);
+    const children = buildChildren(entityIds);
     labelNodes.push({
       id: label,
-      name: label,
+      name: labelNames.get(label) ?? label,
       kind: 'label',
-      children: entityChildren,
-      totalCount: entityChildren.length,
+      children,
+      totalCount: childBuilder ? countAll(children) : children.length,
     });
   }
   if (noLabels.length > 0) {
-    const entityChildren = noLabels.map((id) => entityNode(id, hass));
-    sortNodes(entityChildren);
+    const children = buildChildren(noLabels);
     labelNodes.push({
       id: '__no_other_labels__',
-      name: 'No other labels',
+      name: 'No label',
       kind: 'missing-label',
-      children: entityChildren,
-      totalCount: entityChildren.length,
+      children,
+      totalCount: childBuilder ? countAll(children) : children.length,
     });
   }
   sortNodes(labelNodes);
@@ -521,18 +522,39 @@ function buildIntegrationTree(
   workingSet: string[],
   hass: HomeAssistant,
 ): TreeNode {
-  const platforms = new Map<string, Map<string | null, string[]>>();
+  return rootNode(integrationNodes(workingSet, hass), workingSet.length);
+}
 
-  for (const id of workingSet) {
-    const entity = hass.entities?.[id];
-    const platform = entity?.platform ?? 'unknown';
-    const deviceId = entity?.device_id ?? null;
+function buildDeviceTree(workingSet: string[], hass: HomeAssistant): TreeNode {
+  return rootNode(deviceGroupNodes(workingSet, hass), workingSet.length);
+}
 
-    let devices = platforms.get(platform);
-    if (!devices) {
-      devices = new Map();
-      platforms.set(platform, devices);
-    }
+function buildLabelDeviceTree(
+  workingSet: string[],
+  hass: HomeAssistant,
+  labelNames: Map<string, string>,
+  onlyLabels: string[],
+): TreeNode {
+  return buildLabelTree(workingSet, hass, labelNames, onlyLabels, (ids) =>
+    deviceGroupNodes(ids, hass),
+  );
+}
+
+function buildLabelIntegrationDeviceTree(
+  workingSet: string[],
+  hass: HomeAssistant,
+  labelNames: Map<string, string>,
+  onlyLabels: string[],
+): TreeNode {
+  return buildLabelTree(workingSet, hass, labelNames, onlyLabels, (ids) =>
+    integrationNodes(ids, hass),
+  );
+}
+
+function deviceGroupNodes(entityIds: string[], hass: HomeAssistant): TreeNode[] {
+  const devices = new Map<string | null, string[]>();
+  for (const id of entityIds) {
+    const deviceId = hass.entities?.[id]?.device_id ?? null;
     let entities = devices.get(deviceId);
     if (!entities) {
       entities = [];
@@ -541,42 +563,60 @@ function buildIntegrationTree(
     entities.push(id);
   }
 
-  const platformNodes: TreeNode[] = [];
-  for (const [platform, devices] of platforms) {
-    const deviceNodes: TreeNode[] = [];
-    for (const [deviceId, entityIds] of devices) {
-      const entityChildren = entityIds.map((id) => entityNode(id, hass));
-      sortNodes(entityChildren);
-      if (deviceId === null) {
-        deviceNodes.push({
-          id: '__no_device__',
-          name: 'Device not available',
-          kind: 'missing-device',
-          children: entityChildren,
-          totalCount: entityChildren.length,
-        });
-      } else {
-        deviceNodes.push({
-          id: deviceId,
-          name: deviceDisplayName(hass.devices?.[deviceId], deviceId),
-          kind: 'device',
-          children: entityChildren,
-          totalCount: entityChildren.length,
-        });
-      }
+  const nodes: TreeNode[] = [];
+  for (const [deviceId, ids] of devices) {
+    const entityChildren = ids.map((id) => entityNode(id, hass));
+    sortNodes(entityChildren);
+    if (deviceId === null) {
+      nodes.push({
+        id: '__no_device__',
+        name: 'Device not available',
+        kind: 'missing-device',
+        children: entityChildren,
+        totalCount: entityChildren.length,
+      });
+    } else {
+      nodes.push({
+        id: deviceId,
+        name: deviceDisplayName(hass.devices?.[deviceId], deviceId),
+        kind: 'device',
+        children: entityChildren,
+        totalCount: entityChildren.length,
+      });
     }
-    sortNodes(deviceNodes);
-    platformNodes.push({
+  }
+  sortNodes(nodes);
+  return nodes;
+}
+
+function integrationNodes(
+  entityIds: string[],
+  hass: HomeAssistant,
+): TreeNode[] {
+  const platforms = new Map<string, string[]>();
+  for (const id of entityIds) {
+    const platform = hass.entities?.[id]?.platform ?? 'unknown';
+    let ids = platforms.get(platform);
+    if (!ids) {
+      ids = [];
+      platforms.set(platform, ids);
+    }
+    ids.push(id);
+  }
+
+  const nodes: TreeNode[] = [];
+  for (const [platform, ids] of platforms) {
+    const children = deviceGroupNodes(ids, hass);
+    nodes.push({
       id: platform,
       name: titleize(platform),
       kind: 'integration',
-      children: deviceNodes,
-      totalCount: countAll(deviceNodes),
+      children,
+      totalCount: countAll(children),
     });
   }
-  sortNodes(platformNodes);
-
-  return rootNode(platformNodes, workingSet.length);
+  sortNodes(nodes);
+  return nodes;
 }
 
 function rootNode(children: TreeNode[], uniqueCount: number): TreeNode {

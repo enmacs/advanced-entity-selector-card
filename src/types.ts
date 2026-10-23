@@ -6,7 +6,10 @@ export type HierarchyId =
   | 'class_unit'
   | 'class_unit_device'
   | 'label'
-  | 'integration_device';
+  | 'integration_device'
+  | 'device'
+  | 'label_device'
+  | 'label_integration_device';
 
 export interface AdvancedEntitySelectorCardConfig extends LovelaceCardConfig {
   title?: string;

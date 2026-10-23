@@ -18,7 +18,7 @@ const EN = {
   'editor.helper.labels':
     'Only entities tagged with at least one of these Home Assistant labels are shown. Create labels under Settings → Areas, labels & zones.',
   'editor.helper.hierarchies':
-    'Which grouping views the user can switch between. Leave empty to show all four.',
+    'Which grouping views the user can switch between. Leave empty for the default six (everything except Domain · Class, Class · Device · Unit and Class · Unit · Device). Select explicitly to enable the extra views.',
   'editor.helper.default_hierarchy': 'Hierarchy selected when the card first loads.',
   'editor.helper.recents_limit':
     'How many recently-picked entities to remember per label set (0 disables).',
@@ -35,6 +35,9 @@ const EN = {
   'hierarchy.class_unit_device': 'Class · Unit · Device',
   'hierarchy.label': 'Label',
   'hierarchy.integration_device': 'Integration · Device',
+  'hierarchy.device': 'Device',
+  'hierarchy.label_device': 'Label · Device',
+  'hierarchy.label_integration_device': 'Label · Integration · Device',
 
   // Card header & controls
   'card.mode.all': 'All',
@@ -124,7 +127,7 @@ const DE: Partial<Record<I18nKey, string>> = {
   'editor.helper.labels':
     'Es werden nur Entitäten angezeigt, die mit mindestens einem dieser Home-Assistant-Labels markiert sind. Labels lassen sich unter Einstellungen → Bereiche, Labels & Zonen anlegen.',
   'editor.helper.hierarchies':
-    'Welche Gruppierungsansichten der Benutzer wechseln kann. Leer lassen, um alle vier zu zeigen.',
+    'Welche Gruppierungsansichten der Benutzer wechseln kann. Leer lassen für die sechs Standardansichten (alle außer Domain · Klasse, Klasse · Gerät · Einheit und Klasse · Einheit · Gerät). Zusätzliche Ansichten hier explizit auswählen.',
   'editor.helper.default_hierarchy': 'Hierarchie, die beim Laden der Karte aktiv ist.',
   'editor.helper.recents_limit':
     'Wie viele zuletzt ausgewählte Entitäten pro Label-Satz gemerkt werden (0 deaktiviert).',
@@ -141,6 +144,9 @@ const DE: Partial<Record<I18nKey, string>> = {
   'hierarchy.class_unit_device': 'Klasse · Einheit · Gerät',
   'hierarchy.label': 'Label',
   'hierarchy.integration_device': 'Integration · Gerät',
+  'hierarchy.device': 'Gerät',
+  'hierarchy.label_device': 'Label · Gerät',
+  'hierarchy.label_integration_device': 'Label · Integration · Gerät',
 
   'card.mode.all': 'Alle',
   'card.mode.selecting': 'Auswahl',

@@ -16,6 +16,9 @@ const HIERARCHY_IDS: ReadonlyArray<HierarchyId> = [
   'class_unit_device',
   'label',
   'integration_device',
+  'device',
+  'label_device',
+  'label_integration_device',
 ];
 
 const FIELD_NAMES = [

@@ -46,9 +46,13 @@ title: My Entities
 labels: [my-label]
 hierarchies:
   - floor_area_device
-  - domain_class
   - label
   - integration_device
+  - device
+  - label_device
+  - label_integration_device
+  - domain_class      # optional extra views:
+  - class_unit        # class_unit, class_unit_device
 default_hierarchy: floor_area_device
 show_state: true
 show_diagnostic: false
@@ -59,7 +63,7 @@ recents_limit: 10
 | --- | --- | --- | --- |
 | `labels` | `string[]` | — (required) | HA labels to filter entities by. Only entities tagged with at least one of these are shown. |
 | `title` | `string` | card name | Header shown at the top of the card. |
-| `hierarchies` | `string[]` | all four | Which grouping views the user can switch between. |
+| `hierarchies` | `string[]` | `floor_area_device`, `label`, `integration_device`, `device`, `label_device`, `label_integration_device` | Which grouping views the user can switch between. Add `domain_class`, `class_unit` or `class_unit_device` to enable the additional views. |
 | `default_hierarchy` | `string` | `floor_area_device` | Hierarchy selected on first load. |
 | `show_state` | `boolean` | `true` | Show each entity's current state next to its name. |
 | `show_diagnostic` | `boolean` | `false` | Default state of the "Show diagnostic" toggle. Diagnostic/config entities are hidden by default. |
